@@ -1,0 +1,2 @@
+# amber
+Toying with Rust
