@@ -2,6 +2,3 @@
 name = "amber"
 version = "0.1.0"
 authors = ["dhf"]
-
-[dependencies]
-uuid = { version = "0.5.1", features = ["v4"] }
