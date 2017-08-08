@@ -70,6 +70,10 @@ impl Room {
             println!("{}", item.short_descr);
         }
 
+        for organism in &self.organisms {
+            println!("{}", organism.name);
+        }
+
         print!("Exits: ");
         for exit in self.exits.keys() {
             print!("{}, ", exit);
@@ -118,7 +122,7 @@ fn create_forest() -> Vec<Room> {
 }
 
 fn main() {
-    let player = Organism {name: "Charles".to_string(), health: 100, mental: 100};
+    let player = Organism {name: "Charles.".to_string(), health: 100, mental: 100};
     let mut world = World {rooms: create_forest()};
 
     let mut kbd_input = String::new();
