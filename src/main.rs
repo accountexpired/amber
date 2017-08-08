@@ -2,7 +2,6 @@ use std::collections::HashMap;
 use std::io;
 use std::io::Write;
 
-
 struct World {
     rooms: Vec<Room>,
 }
@@ -17,6 +16,22 @@ impl World {
             Some(room) => room
         }
     }
+
+    fn get_room_mut(&mut self, index: usize) -> &mut Room {
+        match self.rooms.get_mut(index) {
+            None => {
+                println!("room with id={} does not exit!", index);
+                std::process::exit(1);
+            },
+            Some(room) => room
+        }
+    }
+}
+
+struct Organism {
+    name: String,
+    health: i32,
+    mental: i32,
 }
 
 struct Item {
@@ -35,6 +50,7 @@ struct Room {
     long_descr: String,
     exits: HashMap<String, usize>,
     items: Vec<Item>,
+    organisms: Vec<Organism>,
 }
 
 impl Room {
@@ -43,6 +59,7 @@ impl Room {
             long_descr: long_descr.to_string(),
             exits: HashMap::new(),
             items: Vec::new(),
+            organisms: Vec::new(),
         }
     }
 
@@ -54,7 +71,7 @@ impl Room {
         }
 
         print!("Exits: ");
-        for (exit, _) in self.exits.iter() {
+        for exit in self.exits.keys() {
             print!("{}, ", exit);
         }
         println!();
@@ -62,6 +79,10 @@ impl Room {
 
     fn add_item(&mut self, item: Item) {
         self.items.push(item);
+    }
+
+    fn add_organism(&mut self, organism: Organism) {
+        self.organisms.push(organism);
     }
 
     fn add_exit(&mut self, direction: &str, room_id: usize) {
@@ -73,7 +94,7 @@ impl Room {
     }
 
     fn get_exit(&self, direction: &str) -> usize {
-        self.exits.get(direction).map(|&direction| direction).unwrap() // Clone instead of map. Also, don't unwrap.
+        self.exits.get(direction).cloned().unwrap()
     }
 }
 
@@ -97,28 +118,40 @@ fn create_forest() -> Vec<Room> {
 }
 
 fn main() {
-    let world = World {rooms: create_forest()};
+    let player = Organism {name: "Charles".to_string(), health: 100, mental: 100};
+    let mut world = World {rooms: create_forest()};
 
     let mut kbd_input = String::new();
 
-    let mut current_room = world.get_room(0usize);
+    let mut current_room_id = 0;
 
-    current_room.display();
+    {
+        let mut current_room = world.get_room_mut(current_room_id);
+        current_room.add_organism(player);
+        current_room.display();
+    }
+
+    let mut changed_rooms = false;
 
     loop {
+        let current_room = world.get_room(current_room_id);
+
+        if changed_rooms {
+            current_room.display();
+            changed_rooms = false;
+        }
+
         print!("> ");
         io::stdout().flush().unwrap();
 
         io::stdin().read_line(&mut kbd_input)
-            .ok()
             .expect("Failed to read line");
 
         kbd_input = kbd_input.trim_right().to_string();
 
         if current_room.has_exit(&kbd_input) {
-            let exit = current_room.get_exit(&kbd_input);
-            current_room = world.get_room(exit);
-            current_room.display();
+            current_room_id = current_room.get_exit(&kbd_input);
+            changed_rooms = true;
         } else {
             println!("What?");
         }
