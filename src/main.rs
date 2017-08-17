@@ -2,6 +2,12 @@ use std::collections::HashMap;
 use std::io;
 use std::io::Write;
 
+extern crate colored;
+
+use colored::*;
+
+// TODO: Show the room ID for the room you are in.
+
 struct World {
     rooms: Vec<Room>,
 }
@@ -67,18 +73,22 @@ impl Room {
         println!("{}", self.long_descr);
 
         for item in &self.items {
-            println!("{}", item.short_descr);
+            println!("{}.", item.short_descr.green());
         }
 
         for organism in &self.organisms {
-            println!("{}", organism.name);
+            println!("{}.", organism.name.yellow());
         }
 
         print!("Exits: ");
-        for exit in self.exits.keys() {
-            print!("{}, ", exit);
+        let last_element = self.exits.keys().count();
+        for (i, exit) in self.exits.keys().enumerate() {
+            if i == (last_element - 1) {
+                println!("{}.", exit);
+            } else {
+                print!("{}, ", exit);
+            }
         }
-        println!();
     }
 
     fn add_item(&mut self, item: Item) {
@@ -87,6 +97,10 @@ impl Room {
 
     fn add_organism(&mut self, organism: Organism) {
         self.organisms.push(organism);
+    }
+
+    fn steal_most_recent_organism(&mut self) -> Organism {
+        self.organisms.pop().unwrap()
     }
 
     fn add_exit(&mut self, direction: &str, room_id: usize) {
@@ -103,15 +117,20 @@ impl Room {
 }
 
 fn create_forest() -> Vec<Room> {
-    let mut room1 = Room::new("A green forest.");
-    let mut room2 = Room::new("A green forest.");
-    let mut room3 = Room::new("A green forest.");
+    let mut room1 = Room::new("A green forest. There are trees and bushes all over the place.");
 
-    let iron_ore = Item::new("An iron ore.");
+    let mut room2 = Room::new("A green forest. There are few trees here.");
+
+    let mut room3 = Room::new("A green forest. Birds are chirping and the sunlight penetrates\n\
+                               the canopy forming a pattern of light on the ground.");
+
+    let iron_ore = Item::new("An iron ore");
     room2.add_item(iron_ore);
 
-    let copper_ore = Item::new("A copper ore.");
+    let copper_ore = Item::new("A copper ore");
+    let charles = Organism {name: "Charles".to_string(), health: 50, mental: 100};
     room3.add_item(copper_ore);
+    room3.add_organism(charles);
 
     room1.add_exit("n", 1);
     room2.add_exit("s", 0);
@@ -122,23 +141,17 @@ fn create_forest() -> Vec<Room> {
 }
 
 fn main() {
-    let player = Organism {name: "Charles.".to_string(), health: 100, mental: 100};
+    let mut player = Organism {name: "Yourself".to_string(), health: 100, mental: 100};
     let mut world = World {rooms: create_forest()};
 
     let mut kbd_input = String::new();
 
     let mut current_room_id = 0;
-
-    {
-        let mut current_room = world.get_room_mut(current_room_id);
-        current_room.add_organism(player);
-        current_room.display();
-    }
-
-    let mut changed_rooms = false;
+    let mut changed_rooms = true;
 
     loop {
-        let current_room = world.get_room(current_room_id);
+        let mut current_room = world.get_room_mut(current_room_id);
+        current_room.add_organism(player);
 
         if changed_rooms {
             current_room.display();
@@ -159,6 +172,8 @@ fn main() {
         } else {
             println!("What?");
         }
+
+        player = current_room.steal_most_recent_organism();
 
         kbd_input.clear();
     }
